@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spectra 6 Optimizer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:#e8e8e8;font-family:system-ui,sans-serif;font-size:14px;padding-bottom:40px}
+h1{font-size:1.1rem;padding:14px;background:#1a1a1a;border-bottom:1px solid #2a2a2a}
+.section{padding:12px 14px;border-bottom:1px solid #1e1e1e}
+.section h2{font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+label{display:block;color:#aaa;font-size:.8rem;margin-bottom:3px}
+input[type=text],select{width:100%;padding:8px 10px;background:#1e1e1e;border:1px solid #333;border-radius:6px;color:#e8e8e8;font-size:.9rem}
+input[type=range]{width:100%;accent-color:#3d74c7}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.btn{padding:9px 16px;border-radius:7px;border:none;cursor:pointer;font-size:.85rem;font-weight:600}
+.btn-primary{background:#2e5fa3;color:#fff}
+.btn-primary:disabled{background:#1e3a6a;color:#555;cursor:default}
+.btn-warn{background:#7a3a2a;color:#fff}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.upload-btn-wrap{margin:8px 0}
+#fileBtn{display:block;width:100%;padding:18px;background:#1a1a1a;border:2px dashed #444;border-radius:10px;color:#aaa;font-size:.9rem;text-align:center;cursor:pointer}
+canvas{display:block;max-width:100%;height:auto;margin:8px auto;border-radius:6px;background:#0a0a0a}
+.status-bar{padding:8px 14px;background:#0d1a0d;color:#6c9b6c;font-size:.8rem;border-bottom:1px solid #1e2e1e;min-height:32px}
+.conn{float:right;font-size:.75rem}
+.conn.online{color:#6c9b6c}.conn.offline{color:#9b5050}
+.palette-bar{height:18px;border-radius:4px;overflow:hidden;display:flex;margin-top:6px}
+.palette-bar div{height:100%;transition:flex .3s}
+#histCanvas{width:100%;height:72px;background:#0c0c0c;border-radius:5px;display:block;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;background:#333;color:#aaa;margin-bottom:6px}
+.pill.auto{background:#1a3a1a;color:#6c9}
+details summary{cursor:pointer;color:#888;font-size:.8rem;padding:4px 0}
+details[open] summary{color:#aaa}
+.adv{padding-top:8px}
+.ip-row{display:flex;gap:8px;align-items:center}
+.ip-row input{flex:1}
+#connDot{font-size:1.2rem;line-height:1}
+</style>
+</head>
+<body>
+
+<h1>Spectra 6 Optimizer
+  <span class="conn offline" id="connLabel">&#9679; offline</span>
+</h1>
+
+<div class="section">
+  <h2>ESP32 Address</h2>
+  <div class="ip-row">
+    <input type="text" id="ipInput" placeholder="192.168.x.x" value="">
+    <button class="btn btn-primary" onclick="checkConn()">Connect</button>
+  </div>
+  <div style="color:#888;font-size:.75rem;margin-top:5px" id="ipHint">Enter the IP shown in Serial Monitor</div>
+</div>
+
+<div class="section">
+  <h2>Image</h2>
+  <div class="upload-btn-wrap">
+    <label id="fileBtn">
+      <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="onFileChange(this)">
+      Tap here to select a photo
+    </label>
+  </div>
+  <div class="row">
+    <button class="btn btn-primary" id="btnProcess" disabled onclick="processImage()">&#9654; Process</button>
+    <button class="btn btn-primary" id="btnSend" disabled onclick="sendDisplay()">&#8594; Send to Display</button>
+    <button class="btn btn-warn btn-sm" onclick="clearDisplay()">Clear</button>
+  </div>
+</div>
+
+<div class="section">
+  <div id="statusMsg" class="status-bar">Load an image to begin</div>
+  <canvas id="previewCanvas" width="400" height="600"></canvas>
+  <div class="palette-bar" id="paletteBar"></div>
+  <canvas id="histCanvas"></canvas>
+</div>
+
+<div class="section">
+  <h2>Dithering</h2>
+  <select id="selDither">
+    <option value="auto">Auto (scene-based)</option>
+    <option value="none">None</option>
+    <option value="ord4">Ordered 4x4</option>
+    <option value="ord8">Ordered 8x8</option>
+    <option value="fs">Floyd-Steinberg</option>
+    <option value="jjn">Jarvis-Judice-Ninke</option>
+    <option value="stucki">Stucki</option>
+    <option value="burkes">Burkes</option>
+    <option value="atkinson">Atkinson</option>
+  </select>
+</div>
+
+<div class="section">
+  <h2>Color Protection</h2>
+  <div class="grid2">
+    <label><input type="checkbox" id="cSkin" checked> Skin tones</label>
+    <label><input type="checkbox" id="cSky" checked> Sky / blue</label>
+    <label><input type="checkbox" id="cVeg" checked> Vegetation</label>
+    <label><input type="checkbox" id="cSunset" checked> Sunset / warm</label>
+  </div>
+</div>
+
+<div class="section">
+  <details>
+    <summary>Advanced Adjustments</summary>
+    <div class="adv">
+      <div class="grid2">
+        <div><label>Brightness <span id="lBri">0</span></label><input type="range" id="sBri" min="-100" max="100" value="0"></div>
+        <div><label>Contrast <span id="lCon">0</span></label><input type="range" id="sCon" min="-100" max="100" value="0"></div>
+        <div><label>Gamma <span id="lGam">1.0</span></label><input type="range" id="sGam" min="40" max="280" value="100"></div>
+        <div><label>Exposure <span id="lExp">0</span></label><input type="range" id="sExp" min="-100" max="100" value="0"></div>
+        <div><label>Highlights <span id="lHi">0</span></label><input type="range" id="sHi" min="-100" max="100" value="0"></div>
+        <div><label>Shadows <span id="lSh">0</span></label><input type="range" id="sSh" min="-100" max="100" value="0"></div>
+        <div><label>Saturation <span id="lSat">0</span></label><input type="range" id="sSat" min="-100" max="100" value="0"></div>
+        <div><label>Vibrance <span id="lVib">0</span></label><input type="range" id="sVib" min="-100" max="100" value="0"></div>
+        <div><label>Temp <span id="lTmp">0</span></label><input type="range" id="sTmp" min="-100" max="100" value="0"></div>
+        <div><label>Tint <span id="lTnt">0</span></label><input type="range" id="sTnt" min="-100" max="100" value="0"></div>
+        <div><label>Sharpen <span id="lShr">0</span></label><input type="range" id="sShr" min="0" max="100" value="0"></div>
+        <div><label>Noise Red. <span id="lNR">0</span></label><input type="range" id="sNR" min="0" max="100" value="0"></div>
+        <div><label>CLAHE Amt <span id="lCA">40</span></label><input type="range" id="sCA" min="0" max="100" value="40"></div>
+        <div><label>CLAHE Rad <span id="lCR">8</span></label><input type="range" id="sCR" min="2" max="32" value="8"></div>
+        <div><label>Edge Enh. <span id="lEE">0</span></label><input type="range" id="sEE" min="0" max="100" value="0"></div>
+        <div><label>Local Cont <span id="lLC">0</span></label><input type="range" id="sLC" min="0" max="100" value="0"></div>
+      </div>
+    </div>
+  </details>
+</div>
+
+<script>
+// ================================================================
+// CONFIG
+// ================================================================
+const EPD_W = 400, EPD_H = 600;
+
+const PALETTE = [
+  {name:'Black',  r:  0, g:  0, b:  0, code:0x0, hex:'#000000'},
+  {name:'White',  r:255, g:255, b:255, code:0x1, hex:'#ffffff'},
+  {name:'Green',  r:  0, g:155, b: 72, code:0x2, hex:'#009b48'},
+  {name:'Blue',   r:  0, g: 68, b:143, code:0x3, hex:'#00448f'},
+  {name:'Red',    r:228, g: 18, b: 18, code:0x4, hex:'#e41212'},
+  {name:'Yellow', r:255, g:218, b: 44, code:0x5, hex:'#ffda2c'},
+];
+
+let espIP = '';
+let srcBmp = null;
+let framebuf = null;
+
+// ================================================================
+// CONNECTIVITY
+// ================================================================
+function getIP() {
+  return (document.getElementById('ipInput').value || '').trim().replace(/\/+$/,'');
+}
+
+async function checkConn() {
+  const ip = getIP();
+  if (!ip) return;
+  espIP = ip;
+  localStorage.setItem('espIP', ip);
+  document.getElementById('ipHint').textContent = 'Checking...';
+  try {
+    const r = await fetch('http://'+ip+'/status', {signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined});
+    if (r.ok) setOnline(true, await r.text());
+    else setOnline(false);
+  } catch(e) {
+    setOnline(false);
+  }
+}
+
+function setOnline(ok, msg) {
+  const el = document.getElementById('connLabel');
+  el.textContent = ok ? '● online' : '● offline';
+  el.className = 'conn ' + (ok ? 'online' : 'offline');
+  document.getElementById('ipHint').textContent = ok ? ('Status: ' + (msg||'')) : 'Cannot reach device';
+}
+
+// Restore saved IP
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('espIP');
+  if (saved) { document.getElementById('ipInput').value = saved; espIP = saved; checkConn(); }
+  refreshLabels();
+  renderPaletteBar(new Uint32Array(PALETTE.length).fill(1));
+});
+
+setInterval(() => { if (espIP) checkConn(); }, 8000);
+
+// ================================================================
+// FILE LOAD
+// ================================================================
+function onFileChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('fileBtn').textContent = file.name;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    srcBmp = img;
+    URL.revokeObjectURL(url);
+    setStatus('Loaded ' + img.width + 'x' + img.height + ' — tap Process');
+    document.getElementById('btnProcess').disabled = false;
+    document.getElementById('btnSend').disabled = true;
+    framebuf = null;
+    // Show original preview
+    const cv = document.getElementById('previewCanvas');
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, EPD_W, EPD_H);
+  };
+  img.src = url;
+}
+
+// ================================================================
+// SLIDER LABELS
+// ================================================================
+function refreshLabels() {
+  const map = {sBri:'lBri',sCon:'lCon',sExp:'lExp',sHi:'lHi',sSh:'lSh',
+               sSat:'lSat',sVib:'lVib',sTmp:'lTmp',sTnt:'lTnt',
+               sShr:'lShr',sNR:'lNR',sCA:'lCA',sCR:'lCR',sEE:'lEE',sLC:'lLC'};
+  for (const [sid,lid] of Object.entries(map)) {
+    const el = document.getElementById(sid);
+    if (el) document.getElementById(lid).textContent = el.value;
+  }
+  document.getElementById('lGam').textContent = (document.getElementById('sGam').value/100).toFixed(1);
+}
+document.querySelectorAll('input[type=range]').forEach(s => s.addEventListener('input', refreshLabels));
+
+function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+
+// ================================================================
+// COLOR MATH
+// ================================================================
+function srgbToLinear(v) {
+  v /= 255;
+  return v <= 0.04045 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+}
+function linearToSrgb(v) {
+  v = Math.max(0, Math.min(1, v));
+  return Math.round(255 * (v <= 0.0031308 ? 12.92*v : 1.055*Math.pow(v,1/2.4)-0.055));
+}
+function rgbToXyz(r,g,b) {
+  r=srgbToLinear(r); g=srgbToLinear(g); b=srgbToLinear(b);
+  return [
+    r*0.4124564+g*0.3575761+b*0.1804375,
+    r*0.2126729+g*0.7151522+b*0.0721750,
+    r*0.0193339+g*0.1191920+b*0.9503041
+  ];
+}
+function xyzToLab(x,y,z) {
+  const f=t=>t>0.008856?Math.cbrt(t):(7.787*t+16/116);
+  x=f(x/0.95047); y=f(y/1.0); z=f(z/1.08883);
+  return [116*y-16, 500*(x-y), 200*(y-z)];
+}
+function rgbToLab(r,g,b) { return xyzToLab(...rgbToXyz(r,g,b)); }
+
+function ciede2000(l1,a1,b1, l2,a2,b2) {
+  const deg=Math.PI/180, rad=Math.PI/180;
+  const lBar=(l1+l2)/2;
+  const c1=Math.sqrt(a1*a1+b1*b1), c2=Math.sqrt(a2*a2+b2*b2);
+  const cBar=(c1+c2)/2;
+  const cBar7=Math.pow(cBar,7);
+  const G=0.5*(1-Math.sqrt(cBar7/(cBar7+Math.pow(25,7))));
+  const a1p=a1*(1+G), a2p=a2*(1+G);
+  const c1p=Math.sqrt(a1p*a1p+b1*b1), c2p=Math.sqrt(a2p*a2p+b2*b2);
+  const cBarp=(c1p+c2p)/2;
+  let h1p=Math.atan2(b1,a1p)*180/Math.PI; if(h1p<0)h1p+=360;
+  let h2p=Math.atan2(b2,a2p)*180/Math.PI; if(h2p<0)h2p+=360;
+  let dhp;
+  if(c1p*c2p===0) dhp=0;
+  else if(Math.abs(h2p-h1p)<=180) dhp=h2p-h1p;
+  else if(h2p-h1p>180) dhp=h2p-h1p-360;
+  else dhp=h2p-h1p+360;
+  const dLp=l2-l1, dCp=c2p-c1p;
+  const dHp=2*Math.sqrt(c1p*c2p)*Math.sin(dhp/2*Math.PI/180);
+  let hBarp;
+  if(c1p*c2p===0) hBarp=(h1p+h2p);
+  else if(Math.abs(h1p-h2p)<=180) hBarp=(h1p+h2p)/2;
+  else if(h1p+h2p<360) hBarp=(h1p+h2p+360)/2;
+  else hBarp=(h1p+h2p-360)/2;
+  const T=1-0.17*Math.cos((hBarp-30)*rad)+0.24*Math.cos(2*hBarp*rad)+0.32*Math.cos((3*hBarp+6)*rad)-0.20*Math.cos((4*hBarp-63)*rad);
+  const SL=1+0.015*Math.pow(lBar-50,2)/Math.sqrt(20+Math.pow(lBar-50,2));
+  const SC=1+0.045*cBarp;
+  const SH=1+0.015*cBarp*T;
+  const cBarp7=Math.pow(cBarp,7);
+  const RT=-2*Math.sqrt(cBarp7/(cBarp7+Math.pow(25,7)))*Math.sin(60*Math.exp(-Math.pow((hBarp-275)/25,2))*rad);
+  return Math.sqrt(Math.pow(dLp/SL,2)+Math.pow(dCp/SC,2)+Math.pow(dHp/SH,2)+RT*(dCp/SC)*(dHp/SH));
+}
+
+// Pre-compute palette LAB
+const PAL_LAB = PALETTE.map(p => rgbToLab(p.r, p.g, p.b));
+
+function nearestColor(r,g,b, protect) {
+  const [L,A,B] = rgbToLab(r,g,b);
+  let best=0, bestD=1e9;
+  for (let i=0;i<PALETTE.length;i++) {
+    if (protect && protect[i]) continue;
+    const d = ciede2000(L,A,B, PAL_LAB[i][0],PAL_LAB[i][1],PAL_LAB[i][2]);
+    if (d<bestD) { bestD=d; best=i; }
+  }
+  return best;
+}
+
+// ================================================================
+// SCENE ANALYSIS
+// ================================================================
+function analyzeScene(data, w, h) {
+  let skinPx=0, skyPx=0, vegPx=0, sunPx=0, total=w*h;
+  for (let i=0;i<data.length;i+=4) {
+    const r=data[i],g=data[i+1],b=data[i+2];
+    const [L,A,Bv]=rgbToLab(r,g,b);
+    if (A>5&&A<25&&Bv>5&&Bv<25&&L>30&&L<85) skinPx++;
+    if (b>r+30&&b>g+10&&L>40) skyPx++;
+    if (g>r+20&&g>b+10&&L>20&&L<70) vegPx++;
+    if (r>180&&g>80&&b<80) sunPx++;
+  }
+  return {
+    skin: skinPx/total, sky: skyPx/total,
+    veg: vegPx/total, sun: sunPx/total,
+    dominant: Math.max(skinPx,skyPx,vegPx,sunPx)/total
+  };
+}
+
+// ================================================================
+// CLAHE (LAB space)
+// ================================================================
+function applyCLAHE(data, w, h, amount, radius) {
+  if (amount <= 0) return data;
+  const out = new Uint8ClampedArray(data);
+  const tileW = Math.max(2, Math.floor(w / Math.max(2, Math.floor(w/radius))));
+  const tileH = Math.max(2, Math.floor(h / Math.max(2, Math.floor(h/radius))));
+  const tilesX = Math.ceil(w/tileW), tilesY = Math.ceil(h/tileH);
+  const clipLimit = Math.max(1, amount/100 * 4);
+
+  // Build tile CDFs
+  const cdfs = [];
+  for (let ty=0;ty<tilesY;ty++) {
+    cdfs[ty]=[];
+    for (let tx=0;tx<tilesX;tx++) {
+      const hist = new Float32Array(256);
+      let cnt=0;
+      const x0=tx*tileW, y0=ty*tileH;
+      const x1=Math.min(x0+tileW,w), y1=Math.min(y0+tileH,h);
+      for (let y=y0;y<y1;y++) for (let x=x0;x<x1;x++) {
+        const i=(y*w+x)*4;
+        const L = Math.round(0.299*data[i]+0.587*data[i+1]+0.114*data[i+2]);
+        hist[L]++; cnt++;
+      }
+      // Clip
+      const excess = hist.reduce((s,v)=>s+Math.max(0,v-clipLimit*cnt/256),0);
+      const add = excess/256;
+      for (let i=0;i<256;i++) hist[i]=Math.min(clipLimit*cnt/256, hist[i])+add;
+      // CDF
+      const cdf = new Float32Array(256);
+      cdf[0]=hist[0];
+      for (let i=1;i<256;i++) cdf[i]=cdf[i-1]+hist[i];
+      const cdfMin=cdf.find(v=>v>0)||0;
+      for (let i=0;i<256;i++) cdf[i]=Math.round((cdf[i]-cdfMin)/(cnt-cdfMin||1)*255);
+      cdfs[ty][tx]=cdf;
+    }
+  }
+
+  // Apply with bilinear interpolation
+  for (let y=0;y<h;y++) {
+    for (let x=0;x<w;x++) {
+      const idx=(y*w+x)*4;
+      const L=Math.round(0.299*data[idx]+0.587*data[idx+1]+0.114*data[idx+2]);
+      const tx=(x-tileW/2)/tileW, ty=(y-tileH/2)/tileH;
+      const tx0=Math.max(0,Math.floor(tx)), tx1=Math.min(tilesX-1,tx0+1);
+      const ty0=Math.max(0,Math.floor(ty)), ty1=Math.min(tilesY-1,ty0+1);
+      const fx=tx-tx0, fy=ty-ty0;
+      const v00=cdfs[ty0][tx0][L], v10=cdfs[ty0][tx1][L];
+      const v01=cdfs[ty1][tx0][L], v11=cdfs[ty1][tx1][L];
+      const newL=Math.round(v00*(1-fx)*(1-fy)+v10*fx*(1-fy)+v01*(1-fx)*fy+v11*fx*fy);
+      const ratio = L>0 ? newL/L : 1;
+      const blend = amount/100;
+      out[idx]   = Math.round(Math.min(255, data[idx]  *ratio*blend + data[idx]  *(1-blend)));
+      out[idx+1] = Math.round(Math.min(255, data[idx+1]*ratio*blend + data[idx+1]*(1-blend)));
+      out[idx+2] = Math.round(Math.min(255, data[idx+2]*ratio*blend + data[idx+2]*(1-blend)));
+    }
+  }
+  return out;
+}
+
+// ================================================================
+// DITHERING
+// ================================================================
+const DITHER_MATRICES = {
+  ord4: [
+    [ 0, 8, 2,10],[ 12, 4,14, 6],
+    [ 3,11, 1, 9],[15, 7,13, 5]
+  ],
+  ord8: (()=>{
+    const m=[[0,32,8,40,2,34,10,42],[48,16,56,24,50,18,58,26],[12,44,4,36,14,46,6,38],[60,28,52,20,62,30,54,22],
+             [3,35,11,43,1,33,9,41],[51,19,59,27,49,17,57,25],[15,47,7,39,13,45,5,37],[63,31,55,23,61,29,53,21]];
+    return m.map(r=>r.map(v=>v/64-0.5));
+  })()
+};
+
+function ditherError(pixels, w, h, kernel) {
+  const out = new Uint8Array(w*h);
+  const err = new Float32Array(w*h*3);
+  const get=(x,y,c)=>pixels[(y*w+x)*4+c]+err[(y*w+x)*3+c];
+  const addErr=(x,y,f,er,eg,eb)=>{
+    if(x<0||x>=w||y<0||y>=h) return;
+    const i=(y*w+x)*3;
+    err[i]+=f*er; err[i+1]+=f*eg; err[i+2]+=f*eb;
+  };
+  for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
+    const r=Math.max(0,Math.min(255,get(x,y,0)));
+    const g=Math.max(0,Math.min(255,get(x,y,1)));
+    const b=Math.max(0,Math.min(255,get(x,y,2)));
+    const ci=nearestColor(r,g,b);
+    out[y*w+x]=ci;
+    const p=PALETTE[ci];
+    const er=r-p.r, eg=g-p.g, eb=b-p.b;
+    for (const [dx,dy,f] of kernel) addErr(x+dx,y+dy,f,er,eg,eb);
+  }
+  return out;
+}
+
+const KERNELS = {
+  fs:  [[1,0,7/16],[-1,1,3/16],[0,1,5/16],[1,1,1/16]],
+  jjn: [[1,0,7/48],[2,0,5/48],[-2,1,3/48],[-1,1,5/48],[0,1,7/48],[1,1,5/48],[2,1,3/48],[-2,2,1/48],[-1,2,3/48],[0,2,5/48],[1,2,3/48],[2,2,1/48]],
+  stucki:[[1,0,8/42],[2,0,4/42],[-2,1,2/42],[-1,1,4/42],[0,1,8/42],[1,1,4/42],[2,1,2/42],[-2,2,1/42],[-1,2,2/42],[0,2,4/42],[1,2,2/42],[2,2,1/42]],
+  burkes:[[1,0,8/32],[2,0,4/32],[-2,1,2/32],[-1,1,4/32],[0,1,8/32],[1,1,4/32],[2,1,2/32]],
+  atkinson:[[1,0,1/8],[2,0,1/8],[-1,1,1/8],[0,1,1/8],[1,1,1/8],[0,2,1/8]]
+};
+
+function applyDither(pixels, w, h, method, scene) {
+  if (method === 'auto') {
+    if (scene.skin > 0.15) method = 'atkinson';
+    else if (scene.veg > 0.2) method = 'fs';
+    else if (scene.sky > 0.2) method = 'ord8';
+    else method = 'fs';
+  }
+  if (method === 'none') {
+    const out = new Uint8Array(w*h);
+    for (let i=0;i<w*h;i++) out[i]=nearestColor(pixels[i*4],pixels[i*4+1],pixels[i*4+2]);
+    return out;
+  }
+  if (method === 'ord4' || method === 'ord8') {
+    const mat = DITHER_MATRICES[method];
+    const ms = mat.length;
+    const out = new Uint8Array(w*h);
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++) {
+      const t = mat[y%ms][x%ms];
+      const i=(y*w+x)*4;
+      const r=Math.max(0,Math.min(255,pixels[i]  +t*64));
+      const g=Math.max(0,Math.min(255,pixels[i+1]+t*64));
+      const b=Math.max(0,Math.min(255,pixels[i+2]+t*64));
+      out[y*w+x]=nearestColor(r,g,b);
+    }
+    return out;
+  }
+  return ditherError(pixels, w, h, KERNELS[method] || KERNELS.fs);
+}
+
+// ================================================================
+// IMAGE ADJUSTMENTS
+// ================================================================
+function applyAdjustments(data, w, h) {
+  const bri = +document.getElementById('sBri').value;
+  const con = +document.getElementById('sCon').value;
+  const gam = document.getElementById('sGam').value/100;
+  const exp = +document.getElementById('sExp').value;
+  const hi  = +document.getElementById('sHi').value;
+  const sh  = +document.getElementById('sSh').value;
+  const sat = +document.getElementById('sSat').value;
+  const vib = +document.getElementById('sVib').value;
+  const tmp = +document.getElementById('sTmp').value;
+  const tnt = +document.getElementById('sTnt').value;
+
+  const out = new Uint8ClampedArray(data.length);
+  for (let i=0;i<data.length;i+=4) {
+    let r=data[i], g=data[i+1], b=data[i+2];
+    // Temperature (warm/cool)
+    r = Math.min(255, r + tmp*0.8);
+    b = Math.min(255, b - tmp*0.8);
+    // Tint
+    g = Math.min(255, g + tnt*0.5);
+    // Exposure
+    const ef = Math.pow(2, exp/100);
+    r*=ef; g*=ef; b*=ef;
+    // Brightness
+    r+=bri; g+=bri; b+=bri;
+    // Contrast
+    const cf = (100+con)/100;
+    r=(r-128)*cf+128; g=(g-128)*cf+128; b=(b-128)*cf+128;
+    // Gamma
+    r=255*Math.pow(Math.max(0,r)/255,1/gam);
+    g=255*Math.pow(Math.max(0,g)/255,1/gam);
+    b=255*Math.pow(Math.max(0,b)/255,1/gam);
+    // Highlights / shadows
+    const lum=(r+g+b)/3/255;
+    if (hi !== 0 && lum > 0.5) { const f=(lum-0.5)*2; r+=hi*f*0.5; g+=hi*f*0.5; b+=hi*f*0.5; }
+    if (sh !== 0 && lum < 0.5) { const f=(0.5-lum)*2; r+=sh*f*0.5; g+=sh*f*0.5; b+=sh*f*0.5; }
+    // Saturation
+    const avg=(r+g+b)/3;
+    const sf=1+sat/100;
+    r=avg+(r-avg)*sf; g=avg+(g-avg)*sf; b=avg+(b-avg)*sf;
+    // Vibrance (boost low-sat colors more)
+    const maxC=Math.max(r,g,b), minC=Math.min(r,g,b);
+    const currSat = maxC>0?(maxC-minC)/maxC:0;
+    const vibF = 1 + (vib/100)*(1-currSat);
+    r=avg+(r-avg)*vibF; g=avg+(g-avg)*vibF; b=avg+(b-avg)*vibF;
+
+    out[i]=Math.max(0,Math.min(255,r));
+    out[i+1]=Math.max(0,Math.min(255,g));
+    out[i+2]=Math.max(0,Math.min(255,b));
+    out[i+3]=255;
+  }
+  return out;
+}
+
+// ================================================================
+// HISTOGRAM
+// ================================================================
+function drawHistogram(indexMap, w, h) {
+  const cv = document.getElementById('histCanvas');
+  const cw = cv.clientWidth || cv.width;
+  cv.width = cw; cv.height = 72;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#0c0c0c';
+  ctx.fillRect(0, 0, cw, 72);
+
+  const lumH = new Uint32Array(256);
+  const rH = new Uint32Array(256), gH = new Uint32Array(256), bH = new Uint32Array(256);
+  // We only have indexed data; use palette colors for RGB hists
+  const counts = new Uint32Array(PALETTE.length);
+  for (let i=0;i<indexMap.length;i++) counts[indexMap[i]]++;
+  // Lum histogram from canvas data
+  const cv2 = document.getElementById('previewCanvas');
+  const pxData = cv2.getContext('2d').getImageData(0,0,EPD_W,EPD_H).data;
+  for (let i=0;i<pxData.length;i+=4) {
+    const l=Math.round(0.299*pxData[i]+0.587*pxData[i+1]+0.114*pxData[i+2]);
+    lumH[l]++; rH[pxData[i]]++; gH[pxData[i+1]]++; bH[pxData[i+2]]++;
+  }
+
+  const showL = document.getElementById('cHL') ? document.getElementById('cHL').checked : true;
+  const showRGB = document.getElementById('cHR') ? document.getElementById('cHR').checked : true;
+  const maxV = Math.max(...lumH, ...rH, ...gH, ...bH, 1);
+  const bw = cw/256;
+
+  if (showRGB) {
+    [[rH,'#e44'],[gH,'#4a4'],[bH,'#44e']].forEach(([h,col])=>{
+      ctx.globalAlpha=0.5;
+      ctx.fillStyle=col;
+      for (let x=0;x<256;x++) {
+        const barH=Math.round(h[x]/maxV*70);
+        ctx.fillRect(x*bw,72-barH,Math.ceil(bw),barH);
+      }
+    });
+  }
+  if (showL) {
+    ctx.globalAlpha=0.9;
+    ctx.fillStyle='#fff';
+    for (let x=0;x<256;x++) {
+      const barH=Math.round(lumH[x]/maxV*70);
+      ctx.fillRect(x*bw,72-barH,Math.ceil(bw),barH);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+
+// ================================================================
+// PALETTE BAR
+// ================================================================
+function renderPaletteBar(counts) {
+  const bar = document.getElementById('paletteBar');
+  bar.innerHTML = '';
+  const total = counts.reduce((a,b)=>a+b,0)||1;
+  PALETTE.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.style.flex = counts[i]/total;
+    d.style.background = p.hex;
+    d.title = p.name+': '+Math.round(counts[i]/total*100)+'%';
+    bar.appendChild(d);
+  });
+}
+
+// ================================================================
+// MAIN PROCESS
+// ================================================================
+async function processImage() {
+  if (!srcBmp) return;
+  setStatus('Resizing...');
+  await new Promise(r=>setTimeout(r,10));
+
+  const cv = document.getElementById('previewCanvas');
+  const ctx = cv.getContext('2d');
+  ctx.drawImage(srcBmp, 0, 0, EPD_W, EPD_H);
+  let imgData = ctx.getImageData(0, 0, EPD_W, EPD_H);
+  let pixels = imgData.data;
+
+  setStatus('Analyzing scene...');
+  await new Promise(r=>setTimeout(r,10));
+  const scene = analyzeScene(pixels, EPD_W, EPD_H);
+
+  setStatus('Applying adjustments...');
+  await new Promise(r=>setTimeout(r,10));
+  pixels = applyAdjustments(pixels, EPD_W, EPD_H);
+
+  setStatus('Applying CLAHE...');
+  await new Promise(r=>setTimeout(r,10));
+  const claheAmt = +document.getElementById('sCA').value;
+  const claheRad = +document.getElementById('sCR').value;
+  pixels = applyCLAHE(pixels, EPD_W, EPD_H, claheAmt, claheRad);
+
+  // Write adjusted pixels back to canvas
+  const adj = new ImageData(pixels, EPD_W, EPD_H);
+  ctx.putImageData(adj, 0, 0);
+
+  setStatus('Dithering...');
+  await new Promise(r=>setTimeout(r,10));
+  const method = document.getElementById('selDither').value;
+  const indexed = applyDither(pixels, EPD_W, EPD_H, method, scene);
+
+  setStatus('Rendering preview...');
+  await new Promise(r=>setTimeout(r,10));
+
+  // Draw palette result to canvas
+  const preview = ctx.createImageData(EPD_W, EPD_H);
+  const counts = new Uint32Array(PALETTE.length);
+  for (let i=0;i<indexed.length;i++) {
+    const p=PALETTE[indexed[i]];
+    preview.data[i*4]=p.r; preview.data[i*4+1]=p.g;
+    preview.data[i*4+2]=p.b; preview.data[i*4+3]=255;
+    counts[indexed[i]]++;
+  }
+  ctx.putImageData(preview, 0, 0);
+  renderPaletteBar(counts);
+  drawHistogram(indexed, EPD_W, EPD_H);
+
+  // Build framebuffer (4bpp, 2 pixels per byte)
+  framebuf = new Uint8Array(EPD_W * EPD_H / 2);
+  for (let i=0;i<indexed.length;i+=2) {
+    framebuf[i>>1] = (indexed[i]<<4) | (indexed[i+1]&0x0F);
+  }
+
+  document.getElementById('btnSend').disabled = false;
+  const sceneTags = [];
+  if (scene.skin>0.05) sceneTags.push('skin');
+  if (scene.sky>0.1) sceneTags.push('sky');
+  if (scene.veg>0.1) sceneTags.push('veg');
+  if (scene.sun>0.05) sceneTags.push('sunset');
+  setStatus('Done! Scene: '+(sceneTags.join(', ')||'general')+'. Tap Send to Display.');
+}
+
+// ================================================================
+// SEND TO DISPLAY
+// ================================================================
+async function sendDisplay() {
+  if (!framebuf) { setStatus('Process an image first.'); return; }
+  const ip = getIP();
+  if (!ip) { setStatus('Enter the ESP32 IP address first.'); return; }
+  document.getElementById('btnSend').disabled = true;
+
+  const CHUNK = 8192;
+  const total = framebuf.length;
+  for (let off=0; off<total; off+=CHUNK) {
+    const chunk = framebuf.slice(off, Math.min(off+CHUNK, total));
+    setStatus('Uploading... ' + Math.round(off/total*100) + '%');
+    try {
+      const r = await fetch('http://'+ip+'/chunk?o='+off, {
+        method:'POST',
+        headers:{'Content-Type':'application/octet-stream'},
+        body: chunk
+      });
+      if (!r.ok) throw new Error('chunk failed at '+off);
+    } catch(e) {
+      setStatus('Upload error: ' + e.message);
+      document.getElementById('btnSend').disabled = false;
+      return;
+    }
+  }
+
+  setStatus('Triggering display refresh (~20-30s)...');
+  try {
+    await fetch('http://'+ip+'/show', {method:'POST'});
+  } catch(e) { /* ok if it disconnects */ }
+  setStatus('Sent! Display is refreshing (~20-30s). Do not send again yet.');
+  document.getElementById('btnSend').disabled = false;
+}
+
+async function clearDisplay() {
+  const ip = getIP();
+  if (!ip) { setStatus('Enter the ESP32 IP address first.'); return; }
+  try {
+    await fetch('http://'+ip+'/clear', {method:'POST'});
+    setStatus('Clear command sent.');
+  } catch(e) { setStatus('Error: '+e.message); }
+}
+</script>
+</body>
+</html>
