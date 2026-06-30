@@ -38,13 +38,13 @@
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 
-// Pins — ESP32-S3 + Waveshare HAT+  (your verified working wiring)
-#define PIN_BUSY   13   // BUSY
-#define PIN_RST    12   // RST
-#define PIN_DC      8   // DC
-#define PIN_CS      9   // CS/SS
-#define PIN_SCK    18   // CLK (hardware SPI)
-#define PIN_MOSI   23   // DIN/MOSI (hardware SPI)
+// Pins — from Waveshare ESP32-S3 files
+#define PIN_BUSY    4   // EPD_BUSY_PIN
+#define PIN_RST    14   // EPD_RST_PIN
+#define PIN_DC     13   // EPD_DC_PIN
+#define PIN_CS     10   // EPD_CS_PIN
+#define PIN_SCK    12   // EPD_SCK_PIN
+#define PIN_MOSI   11   // EPD_MOSI_PIN
 
 // Display resolution — Waveshare 4" Spectra 6 HAT+
 #define EPD_W   600
