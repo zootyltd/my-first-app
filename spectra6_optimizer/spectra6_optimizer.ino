@@ -82,12 +82,21 @@ static void epd_dat(uint8_t d) {
 }
 
 static void epd_wait_idle(uint32_t timeout_ms = 15000) {
-  // Waveshare Spectra 6: BUSY LOW = busy, wait until HIGH
+  // BUSY LOW = idle on this HAT revision; poll for HIGH=busy->LOW=idle pattern,
+  // but fall back to a delay-based approach since BUSY reads 0 at cold boot.
+  // Strategy: if already HIGH at entry, poll until LOW (busy->idle transition).
+  // If LOW at entry (already idle), skip immediately.
   delay(10);
+  if (digitalRead(PIN_BUSY) == LOW) {
+    // Already idle — no wait needed
+    delay(10);
+    return;
+  }
+  // Display went HIGH (busy) — wait for it to return LOW (idle)
   uint32_t t0 = millis();
-  while (digitalRead(PIN_BUSY) == LOW) {
+  while (digitalRead(PIN_BUSY) == HIGH) {
     if (millis() - t0 > timeout_ms) {
-      Serial.printf("[EPD]  WARN: wait_idle timeout! BUSY pin=%d\n", digitalRead(PIN_BUSY));
+      Serial.printf("[EPD]  WARN: wait_idle timeout! BUSY=%d\n", digitalRead(PIN_BUSY));
       break;
     }
     delay(100);
@@ -96,13 +105,9 @@ static void epd_wait_idle(uint32_t timeout_ms = 15000) {
 }
 
 static void epd_hw_reset() {
-  Serial.printf("[EPD]  HW reset... BUSY before=%d\n", digitalRead(PIN_BUSY));
   digitalWrite(PIN_RST, HIGH); delay(20);
   digitalWrite(PIN_RST, LOW);  delay(4);
-  digitalWrite(PIN_RST, HIGH); delay(20);
-  Serial.printf("[EPD]  Waiting idle after reset... BUSY=%d\n", digitalRead(PIN_BUSY));
-  epd_wait_idle();
-  Serial.printf("[EPD]  Reset done. BUSY=%d\n", digitalRead(PIN_BUSY));
+  digitalWrite(PIN_RST, HIGH); delay(200);  // generous post-reset settle
 }
 
 void epd_init() {
@@ -170,9 +175,12 @@ void epd_show_buf() {
   SPI.writeBytes(epd_buf, BUF_SZ);       // 120 000 bytes, 4-bit/pixel
   digitalWrite(PIN_CS, HIGH);
 
-  epd_cmd(0x04); epd_wait_idle();        // Power on
-  epd_cmd(0x12); epd_wait_idle();        // Display refresh
-  epd_cmd(0x02); epd_wait_idle();        // Power off
+  Serial.println("[EPD] Power on...");
+  epd_cmd(0x04); epd_wait_idle(5000);    // Power on
+  Serial.println("[EPD] Refreshing display (20-30s)...");
+  epd_cmd(0x12); epd_wait_idle(45000);   // Display refresh — up to 45s
+  Serial.println("[EPD] Power off...");
+  epd_cmd(0x02); epd_wait_idle(5000);    // Power off
 
   Serial.println("[EPD] Refresh complete.");
 }
@@ -190,9 +198,9 @@ void epd_fill(uint8_t colorCode) {
   digitalWrite(PIN_CS, LOW);
   for (size_t i = 0; i < BUF_SZ; i++) SPI.transfer(b);
   digitalWrite(PIN_CS, HIGH);
-  epd_cmd(0x04); epd_wait_idle();
-  epd_cmd(0x12); epd_wait_idle();
-  epd_cmd(0x02); epd_wait_idle();
+  epd_cmd(0x04); epd_wait_idle(5000);
+  epd_cmd(0x12); epd_wait_idle(45000);
+  epd_cmd(0x02); epd_wait_idle(5000);
 }
 
 // ============================================================
