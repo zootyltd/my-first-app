@@ -331,7 +331,8 @@ const char HTML_HEAD[] PROGMEM =
 
 
 // ---- CHUNK 2: body controls ----
-const char HTML_BODY[] PROGMEM = 
+const char HTML_BODY[] PROGMEM =
+  "<div id=\"jsErr\" style=\"display:block;color:#f66;font-size:.8rem;padding:4px 14px;min-height:1em\"></div>\n"
   "<div class=\"upload-zone\" id=\"dropZone\">\n"
   "  <svg width=\"34\" height=\"34\" fill=\"none\" stroke=\"#555\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\">\n"
   "    <path d=\"M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4\"/>\n"
@@ -451,6 +452,8 @@ const char HTML_BODY[] PROGMEM =
 // ---- CHUNK 3a: JavaScript (color science, adjustments, CLAHE) ----
 const char HTML_JS_A[] PROGMEM = 
   "<script>\n"
+  "window.onerror=function(msg,src,line){document.getElementById('jsErr').textContent='JS ERROR line '+line+': '+msg;return false;};\n"
+  "window.addEventListener('unhandledrejection',function(e){document.getElementById('jsErr').textContent='PROMISE ERROR: '+e.reason;});\n"
   "'use strict';\n"
   "// ================================================================\n"
   "// DISPLAY CONSTANTS\n"
