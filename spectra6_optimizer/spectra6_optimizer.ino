@@ -1225,6 +1225,18 @@ const char HTML_JS_B[] PROGMEM =
 // ================================================================
 void setup_server() {
 
+  // Minimal test page -- open /test on phone to check file picker works
+  server.on("/test", HTTP_GET, [](AsyncWebServerRequest* req) {
+    req->send(200, "text/html",
+      "<!DOCTYPE html><html><body style='background:#111;color:#eee;font-family:sans-serif;padding:20px'>"
+      "<h2>File picker test</h2>"
+      "<input type='file' accept='image/*' onchange='document.getElementById(\"r\").textContent=\"Got: \"+this.files[0].name'>"
+      "<p id='r'>tap above</p>"
+      "<p><a href='/'>Back to main page</a></p>"
+      "</body></html>"
+    );
+  });
+
   // Main page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
     AsyncResponseStream* res = req->beginResponseStream("text/html");
