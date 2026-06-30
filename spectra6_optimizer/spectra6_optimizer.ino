@@ -31,6 +31,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <SPI.h>
+#include <esp_task_wdt.h>
 
 // ============================================================
 // USER CONFIGURATION
@@ -211,6 +212,7 @@ void setup_server();   // forward declaration
 void setup() {
   Serial.begin(115200);
   delay(500);
+  esp_task_wdt_deinit();  // disable task watchdog — async_tcp serving large HTML triggers it
   Serial.println("\n[BOOT] Waveshare 4\" Spectra 6 Image Optimizer");
 
   // Allocate framebuffer in PSRAM (120 KB -- too large for internal RAM)
