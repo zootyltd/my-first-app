@@ -38,12 +38,11 @@
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 
-// Pins — ESP32-S3 + Waveshare HAT+
-// Waveshare HAT+ typical pinout for ESP32-S3:
-#define PIN_BUSY   25   // BUSY
-#define PIN_RST    26   // RST
-#define PIN_DC     27   // DC
-#define PIN_CS      5   // CS/SS
+// Pins — ESP32-S3 + Waveshare HAT+  (your verified working wiring)
+#define PIN_BUSY   13   // BUSY
+#define PIN_RST    12   // RST
+#define PIN_DC      8   // DC
+#define PIN_CS      9   // CS/SS
 #define PIN_SCK    18   // CLK (hardware SPI)
 #define PIN_MOSI   23   // DIN/MOSI (hardware SPI)
 
