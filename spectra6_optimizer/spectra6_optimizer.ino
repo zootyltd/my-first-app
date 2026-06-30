@@ -12,15 +12,15 @@
  * SETUP:
  *   1. Set WIFI_SSID and WIFI_PASS below
  *   2. Verify pin numbers match your HAT+ wiring
- *   3. Upload → open Serial Monitor at 115200 → note IP address
+ *   3. Upload -> open Serial Monitor at 115200 -> note IP address
  *   4. Open that IP in your phone browser
- *   5. Upload any image — everything processes in the browser,
+ *   5. Upload any image -- everything processes in the browser,
  *      only the final 120 KB framebuffer is sent to the ESP32
  *
  * PALETTE CALIBRATION:
  *   The RGB values in the JS PALETTE array are typical measured
  *   values. If colors look wrong, adjust them to your panel's
- *   actual output — they vary between production batches.
+ *   actual output -- they vary between production batches.
  *
  * SPECTRA 6 COLORS (6 total, no orange):
  *   0=Black  1=White  2=Green  3=Blue  4=Red  5=Yellow
@@ -38,7 +38,7 @@
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 
-// Pins — from Waveshare ESP32-S3 files
+// Pins -- from Waveshare ESP32-S3 files
 #define PIN_BUSY    4   // EPD_BUSY_PIN
 #define PIN_RST    14   // EPD_RST_PIN
 #define PIN_DC     13   // EPD_DC_PIN
@@ -46,25 +46,25 @@ const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 #define PIN_SCK    12   // EPD_SCK_PIN
 #define PIN_MOSI   11   // EPD_MOSI_PIN
 
-// Display resolution — Waveshare 4" Spectra 6 HAT+
+// Display resolution -- Waveshare 4" Spectra 6 HAT+
 #define EPD_W   600
 #define EPD_H   400
 
 // ============================================================
-// FRAMEBUFFER  (4 bits/pixel → 2 pixels per byte)
-// 600 × 400 / 2 = 120,000 bytes
+// FRAMEBUFFER  (4 bits/pixel -> 2 pixels per byte)
+// 600 x 400 / 2 = 120,000 bytes
 // ============================================================
 #define BUF_SZ  (EPD_W * EPD_H / 2)   // 120000
 
 uint8_t epd_buf[BUF_SZ];
 volatile bool g_show  = false;
 volatile bool g_clear = false;
-String g_status = "Ready — open this page on your phone";
+String g_status = "Ready -- open this page on your phone";
 
 AsyncWebServer server(80);
 
 // ============================================================
-// EPD DRIVER — Waveshare Spectra 6 (UC8179 / ACeP protocol)
+// EPD DRIVER -- Waveshare Spectra 6 (UC8179 / ACeP protocol)
 // BUSY pin: LOW = idle, HIGH = busy (active-HIGH on this panel)
 // ============================================================
 static void epd_cmd(uint8_t c) {
@@ -199,7 +199,7 @@ void setup() {
   Serial.printf("[EPD]  Buffer: %d bytes (%dx%d @ 4bpp)\n", BUF_SZ, EPD_W, EPD_H);
 
   epd_init();
-  Serial.println("[EPD] Init OK — clearing to white...");
+  Serial.println("[EPD] Init OK -- clearing to white...");
   epd_fill(0x01);   // 0x01 = White
   Serial.println("[EPD] Clear done.");
 
@@ -209,9 +209,9 @@ void setup() {
     delay(500); Serial.print(".");
   }
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.printf("\n[WiFi] Connected!  →  http://%s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("\n[WiFi] Connected!  ->  http://%s\n", WiFi.localIP().toString().c_str());
   } else {
-    Serial.println("\n[WiFi] FAILED — check SSID/password");
+    Serial.println("\n[WiFi] FAILED -- check SSID/password");
   }
 
   setup_server();
@@ -269,8 +269,8 @@ h1{font-size:1.1rem;font-weight:600;color:#fff;padding:12px 16px;background:#1a1
 .progress-bar{height:100%;background:#2e5fa3;width:0%;transition:width .15s;border-radius:3px}
 .section{border-top:1px solid #1e1e1e;padding:10px 14px}
 .section details summary{cursor:pointer;user-select:none;font-weight:600;color:#999;font-size:.85rem;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
-.section details summary::before{content:"▶";font-size:.6rem}
-.section details[open] summary::before{content:"▼"}
+.section details summary::before{content:"&#9654;";font-size:.6rem}
+.section details[open] summary::before{content:"&#9660;"}
 .ctrl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px 18px;padding:10px 0}
 .ctrl{display:flex;flex-direction:column;gap:4px}
 .ctrl label{font-size:.74rem;color:#777;display:flex;justify-content:space-between}
@@ -298,7 +298,7 @@ h1{font-size:1.1rem;font-weight:600;color:#fff;padding:12px 16px;background:#1a1
 </style>
 </head>
 <body>
-<h1>&#127749; Spectra 6 Image Optimizer <span id="connStatus">&#9679; connecting…</span></h1>
+<h1>&#127749; Spectra 6 Image Optimizer <span id="connStatus">&#9679; connecting...</span></h1>
 <div class="main">
 )SPEC6";
 
@@ -379,8 +379,8 @@ const char HTML_BODY[] PROGMEM = R"SPEC6(
   <select id="selDither">
     <option value="auto">Auto (scene-adaptive)</option>
     <option value="none">None (direct palette snap)</option>
-    <option value="ordered">Ordered — Bayer 4&#215;4</option>
-    <option value="ordered8">Ordered — Bayer 8&#215;8</option>
+    <option value="ordered">Ordered -- Bayer 4&#215;4</option>
+    <option value="ordered8">Ordered -- Bayer 8&#215;8</option>
     <option value="floyd">Floyd-Steinberg</option>
     <option value="jarvis">Jarvis-Judice-Ninke</option>
     <option value="stucki">Stucki</option>
@@ -420,8 +420,8 @@ const char HTML_BODY[] PROGMEM = R"SPEC6(
 </div><!-- .main -->
 )SPEC6";
 
-// ---- CHUNK 3: JavaScript ----
-const char HTML_JS[] PROGMEM = R"SPEC6(
+// ---- CHUNK 3a: JavaScript (color science, adjustments, CLAHE) ----
+const char HTML_JS_A[] PROGMEM = R"SPEC6(
 <script>
 'use strict';
 // ================================================================
@@ -429,7 +429,7 @@ const char HTML_JS[] PROGMEM = R"SPEC6(
 // ================================================================
 const EPD_W = 600, EPD_H = 400;
 
-// Spectra 6 — 6 colors, NO orange
+// Spectra 6 -- 6 colors, NO orange
 // Adjust RGB to match your panel's actual output
 const PALETTE = [
   {name:'Black',  r:  0, g:  0, b:  0, code:0x0, hex:'#000000'},
@@ -526,7 +526,7 @@ function nearestPalette(r,g,b,pSkin,pSky,pVeg,pSun){
   let best=0,bestD=Infinity;
   for(let i=0;i<PALETTE.length;i++){
     let d=ciede2000(...lab,...PAL_LAB[i]);
-    // Color protection — multiply distance to wrong-category targets
+    // Color protection -- multiply distance to wrong-category targets
     if(pSkin&&isSkin(r,g,b,h,s,v)){
       if(i===2||i===3)d*=3.0;   // green & blue strongly penalised for skin
     }
@@ -775,6 +775,10 @@ function applyCLAHE(data,W,H,tileR,clipLim){
 // ================================================================
 // DITHERING
 // ================================================================
+)SPEC6";
+
+// ---- CHUNK 3b: JavaScript (dithering, pipeline, UI) ----
+const char HTML_JS_B[] PROGMEM = R"SPEC6(
 const B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
 const B8=[0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21];
 const K_FLOYD=[[1,0,7/16],[-1,1,3/16],[0,1,5/16],[1,1,1/16]];
@@ -918,8 +922,8 @@ async function processImage(){
   setBtns(false);
   setProgress(true,0);
 
-  // Step 1 — Resize
-  setStatus('Resizing to 600×400…');await tick();
+  // Step 1 -- Resize
+  setStatus('Resizing to 600x400...');await tick();
   const oc=new OffscreenCanvas(EPD_W,EPD_H);
   const octx=oc.getContext('2d');
   octx.imageSmoothingEnabled=true;octx.imageSmoothingQuality='high';
@@ -928,14 +932,14 @@ async function processImage(){
   const d=id.data;
   setProgress(true,5);
 
-  // Step 2 — Scene analysis
-  setStatus('Analyzing scene…');await tick();
+  // Step 2 -- Scene analysis
+  setStatus('Analyzing scene...');await tick();
   const sc=analyzeScene(d);
   lastScene=sc;
   renderSceneInfo(sc);
   setProgress(true,10);
 
-  // Step 3 — Parameters
+  // Step 3 -- Parameters
   const autoMode=document.getElementById('cAuto').checked;
   let P;
   if(autoMode){P=autoParams(sc);pushToSliders(P);}
@@ -947,8 +951,8 @@ async function processImage(){
   const pSu=document.getElementById('cSun').checked;
   setProgress(true,15);
 
-  // Step 4 — Tone adjustments
-  setStatus('Applying tone adjustments…');await tick();
+  // Step 4 -- Tone adjustments
+  setStatus('Applying tone adjustments...');await tick();
   adjExposure(d,P.exp);
   adjHiSh(d,P.hi,P.sh);
   adjLevels(d,P.bp,P.wp);
@@ -958,34 +962,34 @@ async function processImage(){
   adjVibrance(d,P.vib);
   setProgress(true,30);
 
-  // Step 5 — Filters
-  setStatus('Sharpening / noise / edge / local contrast…');await tick();
+  // Step 5 -- Filters
+  setStatus('Sharpening / noise / edge / local contrast...');await tick();
   if(P.noi>0)adjNoise(d,EPD_W,EPD_H,P.noi);
   if(P.shp>0)adjSharpen(d,EPD_W,EPD_H,P.shp);
   if(P.edg>0)adjEdge(d,EPD_W,EPD_H,P.edg);
   if(P.loc>0)adjLocalContrast(d,EPD_W,EPD_H,P.loc);
   setProgress(true,45);
 
-  // Step 6 — CLAHE
-  setStatus('CLAHE…');await tick();
+  // Step 6 -- CLAHE
+  setStatus('CLAHE...');await tick();
   if(P.cla>0){
     const clip=(P.claS)*(P.cla/100);
     applyCLAHE(d,EPD_W,EPD_H,P.claR,clip);
   }
   setProgress(true,60);
 
-  // Step 7 — Gamma
+  // Step 7 -- Gamma
   adjGamma(d,P.gam);
   setProgress(true,65);
 
-  // Step 8 — Palette mapping + dithering
-  setStatus('CIEDE2000 palette mapping + dithering…');await tick();
+  // Step 8 -- Palette mapping + dithering
+  setStatus('CIEDE2000 palette mapping + dithering...');await tick();
   const method=document.getElementById('selDither').value;
   const indices=dither(d,EPD_W,EPD_H,method,sc,pS,pSk,pV,pSu);
   setProgress(true,90);
 
-  // Step 9 — Preview
-  setStatus('Rendering preview…');await tick();
+  // Step 9 -- Preview
+  setStatus('Rendering preview...');await tick();
   const pxBuf=new Uint8ClampedArray(EPD_W*EPD_H*4);
   const palCnt=new Uint32Array(PALETTE.length);
   for(let i=0;i<EPD_W*EPD_H;i++){
@@ -1001,12 +1005,12 @@ async function processImage(){
   drawHistogram(new ImageData(d,EPD_W,EPD_H));
   renderPaletteBar(palCnt,EPD_W*EPD_H);
 
-  // Step 10 — Framebuffer
+  // Step 10 -- Framebuffer
   framebuf=makeFramebuffer(indices,EPD_W,EPD_H);
   setProgress(true,100);
 
-  const dithName=method==='auto'?`auto → ${autoPickDither(sc)}`:method;
-  setStatus(`Ready! ${EPD_W}×${EPD_H}, ${(framebuf.length/1024).toFixed(0)} KB | scene: ${sc.scene} | dither: ${dithName}`);
+  const dithName=method==='auto'?`auto -> ${autoPickDither(sc)}`:method;
+  setStatus(`Ready! ${EPD_W}x${EPD_H}, ${(framebuf.length/1024).toFixed(0)} KB | scene: ${sc.scene} | dither: ${dithName}`);
   setProgress(false,0);
   setBtns(true);
 }
@@ -1019,12 +1023,12 @@ async function sendDisplay(){
   document.getElementById('btnSend').disabled=true;
   setProgress(true,0);
   const CHUNK=8192;
-  const total=framebuf.length;   // 120000 bytes for 600×400
+  const total=framebuf.length;   // 120000 bytes for 600x400
   const chunks=Math.ceil(total/CHUNK);
   for(let c=0;c<chunks;c++){
     const off=c*CHUNK;
     const slice=framebuf.slice(off,Math.min(off+CHUNK,total));
-    setStatus(`Uploading chunk ${c+1}/${chunks}…`);
+    setStatus(`Uploading chunk ${c+1}/${chunks}...`);
     setProgress(true,(c/chunks)*88);
     try{
       const res=await fetch('/chunk?o='+off,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:slice});
@@ -1037,10 +1041,10 @@ async function sendDisplay(){
     }
   }
   setProgress(true,95);
-  setStatus('Triggering display refresh…');
+  setStatus('Triggering display refresh...');
   await fetch('/show',{method:'POST'});
   setProgress(true,100);
-  setStatus('Sent! Display refreshing (~20-30 seconds) — do not power off.');
+  setStatus('Sent! Display refreshing (~20-30 seconds) -- do not power off.');
   setProgress(false,0);
   document.getElementById('btnSend').disabled=false;
 }
@@ -1132,7 +1136,7 @@ async function loadFile(file){
   const ctx=pv.getContext('2d');
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   ctx.drawImage(srcBmp,0,0,EPD_W,EPD_H);
-  setStatus(`Loaded: ${srcBmp.width}×${srcBmp.height} px — tap Process`);
+  setStatus(`Loaded: ${srcBmp.width}x${srcBmp.height} px -- tap Process`);
   document.getElementById('btnProcess').disabled=false;
   framebuf=null;document.getElementById('btnSend').disabled=true;
   document.getElementById('sceneInfo').innerHTML='';
@@ -1143,7 +1147,7 @@ document.getElementById('btnProcess').addEventListener('click',processImage);
 document.getElementById('btnSend').addEventListener('click',sendDisplay);
 document.getElementById('btnClear').addEventListener('click',()=>{
   fetch('/clear',{method:'POST'});
-  setStatus('Clear command sent — display refreshing to white…');
+  setStatus('Clear command sent -- display refreshing to white...');
 });
 
 // Drag & drop
@@ -1152,7 +1156,7 @@ dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');}
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');loadFile(e.dataTransfer.files[0]);});
 
-// Sliders — live labels
+// Sliders -- live labels
 document.querySelectorAll('input[type=range]').forEach(s=>s.addEventListener('input',refreshLabels));
 refreshLabels();
 
@@ -1198,7 +1202,8 @@ void setup_server() {
     AsyncResponseStream* res = req->beginResponseStream("text/html");
     res->print(FPSTR(HTML_HEAD));
     res->print(FPSTR(HTML_BODY));
-    res->print(FPSTR(HTML_JS));
+    res->print(FPSTR(HTML_JS_A));
+    res->print(FPSTR(HTML_JS_B));
     req->send(res);
   });
 
