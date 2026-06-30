@@ -56,7 +56,7 @@ const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 // ============================================================
 #define BUF_SZ  (EPD_W * EPD_H / 2)   // 120000
 
-uint8_t epd_buf[BUF_SZ];
+uint8_t* epd_buf = nullptr;
 volatile bool g_show  = false;
 volatile bool g_clear = false;
 String g_status = "Ready -- open this page on your phone";
@@ -82,9 +82,9 @@ static void epd_dat(uint8_t d) {
 }
 
 static void epd_wait_idle() {
-  // Spectra 6: BUSY HIGH = panel is busy, wait until LOW
+  // Waveshare Spectra 6: BUSY LOW = busy, wait until HIGH
   delay(10);
-  while (digitalRead(PIN_BUSY) == HIGH) {
+  while (digitalRead(PIN_BUSY) == LOW) {
     delay(100);
   }
   delay(10);
@@ -196,7 +196,16 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n[BOOT] Waveshare 4\" Spectra 6 Image Optimizer");
-  Serial.printf("[EPD]  Buffer: %d bytes (%dx%d @ 4bpp)\n", BUF_SZ, EPD_W, EPD_H);
+
+  // Allocate framebuffer in PSRAM (120 KB -- too large for internal RAM)
+  epd_buf = (uint8_t*)ps_malloc(BUF_SZ);
+  if (!epd_buf) {
+    Serial.println("[ERROR] PSRAM allocation failed!");
+    Serial.println("[ERROR] Enable PSRAM: Tools -> PSRAM -> OPI PSRAM");
+    while (1) delay(1000);
+  }
+  memset(epd_buf, 0x11, BUF_SZ);  // pre-fill with white (0x1=white, packed)
+  Serial.printf("[EPD]  Buffer: %d bytes in PSRAM (%dx%d @ 4bpp)\n", BUF_SZ, EPD_W, EPD_H);
 
   epd_init();
   Serial.println("[EPD] Init OK -- clearing to white...");
