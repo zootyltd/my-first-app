@@ -81,20 +81,28 @@ static void epd_dat(uint8_t d) {
   digitalWrite(PIN_CS, HIGH);
 }
 
-static void epd_wait_idle() {
+static void epd_wait_idle(uint32_t timeout_ms = 15000) {
   // Waveshare Spectra 6: BUSY LOW = busy, wait until HIGH
   delay(10);
+  uint32_t t0 = millis();
   while (digitalRead(PIN_BUSY) == LOW) {
+    if (millis() - t0 > timeout_ms) {
+      Serial.printf("[EPD]  WARN: wait_idle timeout! BUSY pin=%d\n", digitalRead(PIN_BUSY));
+      break;
+    }
     delay(100);
   }
   delay(10);
 }
 
 static void epd_hw_reset() {
+  Serial.printf("[EPD]  HW reset... BUSY before=%d\n", digitalRead(PIN_BUSY));
   digitalWrite(PIN_RST, HIGH); delay(20);
   digitalWrite(PIN_RST, LOW);  delay(4);
   digitalWrite(PIN_RST, HIGH); delay(20);
+  Serial.printf("[EPD]  Waiting idle after reset... BUSY=%d\n", digitalRead(PIN_BUSY));
   epd_wait_idle();
+  Serial.printf("[EPD]  Reset done. BUSY=%d\n", digitalRead(PIN_BUSY));
 }
 
 void epd_init() {
