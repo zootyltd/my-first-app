@@ -47,9 +47,9 @@ const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
 #define PIN_SCK    12   // EPD_SCK_PIN
 #define PIN_MOSI   11   // EPD_MOSI_PIN
 
-// Display resolution -- Waveshare 4" Spectra 6 HAT+
-#define EPD_W   600
-#define EPD_H   400
+// Display resolution -- Waveshare 4" Spectra 6 HAT+ (portrait)
+#define EPD_W   400
+#define EPD_H   600
 
 // ============================================================
 // FRAMEBUFFER  (4 bits/pixel -> 2 pixels per byte)
@@ -332,14 +332,14 @@ const char HTML_HEAD[] PROGMEM =
 
 // ---- CHUNK 2: body controls ----
 const char HTML_BODY[] PROGMEM = 
-  "<div class=\"upload-zone\" id=\"dropZone\" onclick=\"document.getElementById('fileIn').click()\">\n"
+  "<label for=\"fileIn\" class=\"upload-zone\" id=\"dropZone\">\n"
   "  <svg width=\"34\" height=\"34\" fill=\"none\" stroke=\"#555\" stroke-width=\"1.5\" viewBox=\"0 0 24 24\">\n"
   "    <path d=\"M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4\"/>\n"
   "  </svg>\n"
   "  <p>Tap to select photo</p>\n"
   "  <p>or drag &amp; drop here</p>\n"
   "  <input type=\"file\" id=\"fileIn\" accept=\"image/*\">\n"
-  "</div>\n"
+  "</label>\n"
   "\n"
   "<div class=\"row\">\n"
   "  <button class=\"btn btn-primary\" id=\"btnProcess\" disabled>&#9654; Process</button>\n"
@@ -351,7 +351,7 @@ const char HTML_BODY[] PROGMEM =
   "<div class=\"progress-wrap\" id=\"progWrap\"><div class=\"progress-bar\" id=\"progBar\"></div></div>\n"
   "\n"
   "<div class=\"preview-wrap\">\n"
-  "  <canvas id=\"previewCanvas\" width=\"600\" height=\"400\"></canvas>\n"
+  "  <canvas id=\"previewCanvas\" width=\"400\" height=\"600\"></canvas>\n"
   "</div>\n"
   "<div class=\"scene-info\" id=\"sceneInfo\"></div>\n"
   "\n"
@@ -455,7 +455,7 @@ const char HTML_JS_A[] PROGMEM =
   "// ================================================================\n"
   "// DISPLAY CONSTANTS\n"
   "// ================================================================\n"
-  "const EPD_W = 600, EPD_H = 400;\n"
+  "const EPD_W = 400, EPD_H = 600;\n"
   "\n"
   "// Spectra 6 -- 6 colors, NO orange\n"
   "// Adjust RGB to match your panel's actual output\n"
@@ -1051,7 +1051,7 @@ const char HTML_JS_B[] PROGMEM =
   "  document.getElementById('btnSend').disabled=true;\n"
   "  setProgress(true,0);\n"
   "  const CHUNK=8192;\n"
-  "  const total=framebuf.length;   // 120000 bytes for 600x400\n"
+  "  const total=framebuf.length;   // 120000 bytes for 400x600\n"
   "  const chunks=Math.ceil(total/CHUNK);\n"
   "  for(let c=0;c<chunks;c++){\n"
   "    const off=c*CHUNK;\n"
