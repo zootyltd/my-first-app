@@ -156,24 +156,37 @@ function getIP() {
 
 async function checkConn() {
   const ip = getIP();
-  if (!ip) return;
+  const hint = document.getElementById('ipHint');
+  if (!ip) {
+    hint.textContent = 'Please enter the IP address first (e.g. 192.168.8.25)';
+    hint.style.color = '#f88';
+    return;
+  }
   espIP = ip;
   localStorage.setItem('espIP', ip);
-  document.getElementById('ipHint').textContent = 'Checking...';
+  hint.style.color = '#888';
+  hint.textContent = 'Connecting to http://' + ip + '...';
   try {
-    const r = await fetch('http://'+ip+'/status', {signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined});
-    if (r.ok) setOnline(true, await r.text());
-    else setOnline(false);
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch('http://'+ip+'/status', {signal: ctrl.signal});
+    if (r.ok) {
+      setOnline(true, await r.text());
+    } else {
+      setOnline(false, 'HTTP ' + r.status);
+    }
   } catch(e) {
-    setOnline(false);
+    setOnline(false, e.message || 'no response');
   }
 }
 
 function setOnline(ok, msg) {
   const el = document.getElementById('connLabel');
+  const hint = document.getElementById('ipHint');
   el.textContent = ok ? '● online' : '● offline';
   el.className = 'conn ' + (ok ? 'online' : 'offline');
-  document.getElementById('ipHint').textContent = ok ? ('Status: ' + (msg||'')) : 'Cannot reach device';
+  hint.style.color = ok ? '#6c9b6c' : '#f88';
+  hint.textContent = ok ? ('Connected — ' + (msg||'Ready')) : ('Cannot reach device: ' + (msg||'timeout'));
 }
 
 // Restore saved IP
